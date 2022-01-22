@@ -20,6 +20,12 @@ public class tentaizu2 {
             zeroClear();
             go(0, 0, 10);
 
+            if(isComplete){
+                System.out.println("-----------------------\nCOMPLETED\n----------------------------");
+            }
+            else{
+                System.out.println("-----------------------\nNOT COMPLETED\n----------------------------");
+            }
             //   printBoard(x+1);
             numOfBoards--;
         }
@@ -65,13 +71,13 @@ public class tentaizu2 {
         }
 
         else if(board[r][c].equals("%")){
-            //System.out.println("at percent @ "+r+ " "+c );
+            System.out.println("at percent @ "+r+ " "+c );
             if(!(numOfStars>=1)){
-                //System.out.println("percent failed");
+                System.out.println("percent failed");
                 return;
             }
             else {
-              //  System.out.println("percent ran");
+                System.out.println("percent ran");
                 board[r][c] = "*";
                 procede(r, c, numOfStars - 1);
                 board[r][c] = "%";
@@ -110,39 +116,41 @@ public class tentaizu2 {
                 }
                 if((r+1==x )|| (r==x && c+1==y)){
                     if(board[x][y].equals(".")){
-                        openSpots.put(numPoints, new Point(x,y));
+                        openSpots.put(numPoints, new Point(x,y));//places all places with a possible open spot in the hashmap
                         numPoints++;
                     }
                 }
-                if(board[x][y].equals("*")){
+                else if(board[x][y].equals("*")||board[x][y].equals("%")){
                     starsLeft--;
                 }
             }
         }
         System.out.println("stars left: "+ starsLeft+ " open spots: "+openSpots.size());
-        checkEachPos(r,c,starsLeft,openSpots,0);
+        checkEachPos(r,c,starsLeft,openSpots,0, openSpots.size()-starsLeft,usableStars);
 
+        //if all go through and an error occurs, we leave and clean up
         for(int x=0;x<openSpots.size();x++){
             Point p=openSpots.get(x);
             board[p.x][p.y]=".";
         }
 
     }
-    public static void checkEachPos(int r, int c,int starsLeft,HashMap<Integer,Point> openSpots,int k){
+    //places board places with either a star place holder or a no go
+    public static void checkEachPos(int r, int c,int starsLeft,HashMap<Integer,Point> openSpots ,int k,int placesForQuestion,int usableStars){
         if(k==openSpots.size()){
-            procede(r,c,starsLeft);
+            printBoard(767);
+            procede(r,c,usableStars);
             return;
         }
-        Point p=openSpots.get(k);
+        Point p = openSpots.get(k);
         if(starsLeft!=0){
             board[p.x][p.y]="%";
-            checkEachPos(r,c,starsLeft-1,openSpots,k+1);
-            board[p.x][p.y]="?";
-            checkEachPos(r,c,starsLeft-1,openSpots,k+1);
+            checkEachPos(r,c,starsLeft-1,openSpots,k+1,placesForQuestion,usableStars);
+
         }
-        else{
+        if(placesForQuestion!=0){
             board[p.x][p.y]="?";
-            checkEachPos(r,c,starsLeft-1,openSpots,k+1);
+            checkEachPos(r,c,starsLeft,openSpots,k+1,placesForQuestion-1,usableStars);
         }
     }
     public static boolean starsMustGoHere(int r, int c, int maxStars){
@@ -161,7 +169,7 @@ public class tentaizu2 {
                         openSpotsForFuture++;
                     }
                 }
-                if(board[x][y].equals("*")){
+                else if(board[x][y].equals("*")||board[x][y].equals("%")){
                     starsLeft--;
                 }
             }
@@ -183,7 +191,7 @@ public class tentaizu2 {
                 if(y>6 || y<0){
                     continue;
                 }
-                else if(board[x][y].equals("*")){
+                else if(board[x][y].equals("*")||board[x][y].equals("%")){
                     starsLeft--;
                 }
             }
@@ -215,7 +223,7 @@ public class tentaizu2 {
                         return false;
                     }
                 }
-                else if(board[x][y].equals("*")){
+                else if(board[x][y].equals("*")||board[x][y].equals("%")){
                     starsLeft--;
                 }
             }
