@@ -3,6 +3,7 @@ import java.util.*;
 
 //Bryson Paul   1.20.2022   Professor Arup Guha COP3503 Tentaizu Solution
 public class tentaizu2 {
+    //PROBLEMS: ? FOR STARS BEING BAD, IF THERE IS ONLY ONE CASE WHERE THE STARS CAN BE, PUT THOSE SPOTS IN A HASHMAP AND TURN THEM OFF. IF BAD, TURN THEM INTO .'s AGAIN
     //KEY:
     // "-" : NO STARS CAN GO HERE EVER
     // "?" : ON THIS RUN NO STARS CAN GO HERE, BUT IS SUBJECT TO CHANGE
@@ -43,12 +44,12 @@ public class tentaizu2 {
             }
             else if(numContainsExactStars(r,c,Integer.parseInt(board[r][c]))){
                 System.out.println("num, contains exact stars at"+ r+ " "+c);
-                placeCharOnBoard(r,c,".","?");
+                HashMap<Integer,Point> h =placeCharOnBoard(r,c,".","?");
                 printBoard(1337);
 
                 procede(r,c,numOfStars);
 
-                placeCharOnBoard(r,c,"?",".");
+                replaceFromHashMap(h,".");
                 printBoard(64);
                 //procede(r,c,numOfStars);//idk if I should re procede here
                 return;
@@ -244,13 +245,31 @@ public class tentaizu2 {
         for(int r=0;r<7;r++){
             for(int c=0;c<7;c++) {
                 if(board[r][c].equals("0")){
-                    placeCharOnBoard(r,c,".","-");//indicates NOTHING can go in these spots
+                    placeCharOnBoard(r,c);//indicates NOTHING can go in these spots
                 }
             }
         }
     }
     //places a character around the row and column given
-    public static void placeCharOnBoard(int r, int c,String lookFor, String replace){
+    public static void placeCharOnBoard(int r, int c){
+        for(int x=r-1;x<=r+1;x++){
+            if(x>6 || x<0){
+                continue;
+            }
+            for(int y=c-1;y<=c+1;y++) {
+                if(y>6 || y<0){
+                    continue;
+                }
+                if(board[x][y].equals(".")){
+                    board[x][y]="-";
+                }
+            }
+        }
+    }
+    //places chars on the boaed, and if found out later that it does not work will revert itself
+    public static HashMap<Integer,Point> placeCharOnBoard(int r, int c, String lookFor, String replace){
+        HashMap<Integer,Point> replacedCoords = new HashMap<>();
+        int count =0;
         for(int x=r-1;x<=r+1;x++){
             if(x>6 || x<0){
                 continue;
@@ -260,9 +279,18 @@ public class tentaizu2 {
                     continue;
                 }
                 if(board[x][y].equals(lookFor)){
+                    replacedCoords.put(count, new Point(x,y));
                     board[x][y]=replace;
+                    count++;
                 }
             }
+        }
+       return replacedCoords;
+    }
+    public static void replaceFromHashMap(HashMap<Integer,Point> hashMap,String replace){
+        for(int i=0;i<hashMap.size();i++){
+            Point p = hashMap.get(i);
+            board[p.x][p.y]=replace;
         }
     }
     public static void placeCharOnFutureSpots(int r,int c, String lookFor, String replace){
