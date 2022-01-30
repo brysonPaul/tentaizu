@@ -1,4 +1,6 @@
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 
 //Bryson Paul   1.20.2022   Professor Arup Guha COP3503 Tentaizu Solution
@@ -11,21 +13,21 @@ public class tentaizu2 {
     // "." : STAR CAN BE HERE BUT ALSO CANNOT, DEPENDS ON RUN
     // "(number)": DESIGNATES HOW MANY STARS ARE IN THE 3x3 AROUND IT
     static String[][] board;
-    static boolean isComplete;
-    static int boardNum;
+    static Instant start;
     public static void main(String[] args) {
+        start=Instant.now();
         Scanner sc = new Scanner(System.in);
         int numOfBoards = sc.nextInt();
         for (int x = 0; x < numOfBoards; x++) {
             board = new String[7][7];
-            boardNum=x+1;
             readInput(sc);
             zeroClear();
             go(0, 0, 10);
-            printBoard(x);
-            isComplete=false;
-           // sc.next();//runs that space line
+            printBoard(x+1);
         }
+        Instant finish = Instant.now();
+        long timeElapsed = Duration.between(start,finish).toMillis();
+        System.out.println(timeElapsed);
     }
     public static boolean inBounds(int x){
         if(x>6 || x<0){
@@ -56,7 +58,7 @@ public class tentaizu2 {
                         return false;
                     }
                 }
-                if(!isPossible(r,c,Integer.parseInt(board[r][c]),numOfStars,false)){
+                if(!isPossible(r,c,Integer.parseInt(board[r][c]),numOfStars,true)){
                     return false;
                 }
                 else if(numContainsExactStars(r,c,Integer.parseInt(board[r][c]))){
@@ -139,72 +141,6 @@ public class tentaizu2 {
             }
         }
 
-
-//    public static boolean placeStarHolderAtFutureLocation(int r, int c, int maxStars,int usableStars){
-//        //if working properly, open spots should always be greater in size than starsLeft;
-//        int starsLeft = maxStars;
-//        int numPoints=0;
-//        HashMap<Integer,Point> openSpots = new HashMap<>();
-//        for(int x=r-1;x<=r+1;x++){
-//            if(x>6 || x<0){
-//                continue;
-//            }
-//            for(int y=c-1;y<=c+1;y++) {
-//                if(y>6 || y<0){
-//                    continue;
-//                }
-//                if((r+1==x )|| (r==x && c+1==y)){
-//                    if(board[x][y].equals(".")){
-//                        openSpots.put(numPoints, new Point(x,y));//places all places with a possible open spot in the hashmap
-//                        numPoints++;
-//                    }
-//                }
-//                if(board[x][y].equals("*")||board[x][y].equals("%")){
-//                    starsLeft--;
-//                }
-//            }
-//        }
-//        // System.out.println("stars left: "+ starsLeft+ " open spots: "+openSpots.size());
-//        boolean hold = checkEachPos(r,c,starsLeft,openSpots,0, openSpots.size()-starsLeft,usableStars);
-//        if(hold){
-//            return true;
-//        }
-//        //if all go through and an error occurs, we leave and clean up
-//        for(int x=0;x<openSpots.size();x++){
-//            Point p=openSpots.get(x);
-//            board[p.x][p.y]=".";
-//        }
-//        return false;
-//
-//    }
-//    //places board places with either a star place holder or a no go
-//    public static boolean checkEachPos(int r, int c,int starsLeft,HashMap<Integer,Point> openSpots ,int k,int placesForQuestion,int usableStars){
-//        if(k==openSpots.size()){
-//            //printBoard(767);
-//            boolean hold = procede(r,c,usableStars);
-//            if(hold){
-//                return true;
-//            }
-//            return false;
-//        }
-//        Point p = openSpots.get(k);
-//        if(starsLeft!=0){
-//            board[p.x][p.y]="%";
-//            boolean hold = checkEachPos(r,c,starsLeft-1,openSpots,k+1,placesForQuestion,usableStars);
-//            if(hold){
-//                return true;
-//            }
-//
-//        }
-//        if(placesForQuestion!=0){
-//            board[p.x][p.y]="?";
-//            boolean hold = checkEachPos(r,c,starsLeft,openSpots,k+1,placesForQuestion-1,usableStars);
-//            if(hold){
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
     public static boolean starsMustGoHere(int r, int c, int maxStars){
         int starsLeft = maxStars;
         int openSpotsForFuture=0;
@@ -396,6 +332,10 @@ public class tentaizu2 {
         if(Character.isDigit(board[5][5].charAt(0)) && !numContainsExactStars(5,5,Integer.parseInt(board[5][5]))){
             return false;
         }
+        //THIS IS FOR A SINGLE CASE WHERE THE LAST PART OF THE BOARD DOES NOT GET CHECKED
+        if(board[6][6]=="%"){
+            board[6][6]="*";
+        }
         return true;
     }
     public static boolean procede(int r,int c, int usableStars){
@@ -413,13 +353,12 @@ public class tentaizu2 {
         }
     }
     public static void printBoard(int numberBoard){
-        //resetPriority();
         System.out.println("Tentaizu Board #"+numberBoard+":");
         for(int r=0;r<7;r++){
             for(int c=0;c<7;c++) {
-               // if(board[r][c].equals("?")||board[r][c].equals("-")){
-                 //   board[r][c]=".";
-                //}
+                if(board[r][c].equals("?")||board[r][c].equals("-")){
+                    board[r][c]=".";
+                }
                 System.out.print(board[r][c]);
             }
             System.out.println();
