@@ -1,21 +1,16 @@
-
-import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
-//Bryson Paul   1.20.2022   Professor Arup Guha COP3503 Tentaizu Solution
+//Bryson Paul   1.20.2022   Professor Arup Guha     COP3503 Tentaizu Solution
 public class tentaizu2 {
-    //PROBLEMS: ? FOR STARS BEING BAD, IF THERE IS ONLY ONE CASE WHERE THE STARS CAN BE, PUT THOSE SPOTS IN A HASHMAP AND TURN THEM OFF. IF BAD, TURN THEM INTO .'s AGAIN
-    //KEY:
-    // "-" : NO STARS CAN GO HERE EVER
-    // "?" : ON THIS RUN NO STARS CAN GO HERE, BUT IS SUBJECT TO CHANGE
-    // "%" : A STAR IS FORCED TO BE HERE
-    // "." : STAR CAN BE HERE BUT ALSO CANNOT, DEPENDS ON RUN
-    // "(number)": DESIGNATES HOW MANY STARS ARE IN THE 3x3 AROUND IT
+    /*KEY:
+     "-" : No stars can go here ever (only zero uses it)
+     "?" : On this run no stars are able to go here, but is subject to change
+     "%" : Star is forced to be here, and number of stars already account for it
+     "." : Star could go here, depends on run. Will branch
+     "(number)": Designates how many stars in the 3x3 can go around it */
     static String[][] board;
-    static Instant start;
+
     public static void main(String[] args) {
-        start=Instant.now();
         Scanner sc = new Scanner(System.in);
         int numOfBoards = sc.nextInt();
         for (int x = 0; x < numOfBoards; x++) {
@@ -23,281 +18,248 @@ public class tentaizu2 {
             readInput(sc);
             zeroClear();
             go(0, 0, 10);
-            printBoard(x+1);
+            printBoard(x + 1);
+
         }
-        Instant finish = Instant.now();
-        long timeElapsed = Duration.between(start,finish).toMillis();
-        System.out.println(timeElapsed);
     }
-    public static boolean inBounds(int x){
-        if(x>6 || x<0){
+
+    //checks to see if a number is in the bounds of the 7x7
+    public static boolean inBounds(int number) {
+        return number <= 6 && number >= 0;
+    }
+
+    //checks the past numbers which are not finalized to see if they have exact stars around a number.
+    // If not, they are wrong and must go back
+    public static boolean checkPast(int r, int c) {
+        int checkR = r;
+        //how this works is at 0 and 1, it would be out of bounds to do a c-2. to combat this, we use (c+5)%7
+        // to wrap around, but because it would be on the wrong row of checking, we subtract one so it would be two rows up
+        if (c == 0 || c == 1) {
+            checkR--;
+        }
+        //this is the case where if the character at r-1 (or r-2) and (c+5)%7 is a number (and thus is finalized with how my code is set up)
+        if (inBounds(checkR - 1) && Character.isDigit(board[checkR - 1][(c + 5) % 7].charAt(0))) {
+            if (!numContainsExactStars(checkR - 1, (c + 5) % 7, Integer.parseInt(board[checkR - 1][(c + 5) % 7]))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /*basic go method for backtracking. Holds the row, column, and number of stars and checks each time
+     if it can work properly. if it does, goes to proceed method where we keep going until 6,6 and break
+     if board is solved */
+    public static boolean go(int r, int c, int numOfStars) {
+        if (!checkPast(r, c)) {
             return false;
         }
-        else return true;
-    }
-    public static boolean go(int r,int c,int numOfStars){
-
-            System.out.println("row: "+r + " col: "+c);
-           // printBoard(87989);
-
-            int checkR= r;
-            if(c==0 || c==1){
-                checkR--;
+        if (Character.isDigit(board[r][c].charAt(0))) {
+            //we can check r-1 and c-1 here because we know the number here cant mess up the
+            // board by adding a star or a dot. would technically check later in program, but if it is wrong we save a case
+            if (inBounds(r - 1) && inBounds(c - 1) && Character.isDigit(board[r - 1][c - 1].charAt(0))) {
+                if (!numContainsExactStars(r - 1, c - 1, Integer.parseInt(board[r - 1][c - 1]))) {
+                    return false;
+                }
             }
-            //this is the case where if the character at r-1 and c-2 is a number (and thus is finalized with how my code is set up)
-            if(inBounds(checkR-1) && Character.isDigit(board[checkR-1][(c+5)%7].charAt(0))){
-                if(!numContainsExactStars(checkR-1,(c+5)%7,Integer.parseInt(board[checkR-1][(c+5)%7]))){
-                    return false;
-               }
-           }
-            if(Character.isDigit(board[r][c].charAt(0))){
-                //we can check r-1 and c-1 here because we know the number here cant mess up the
-                // board by adding a star or a dot
-                if(inBounds(r-1) && inBounds(c-1) && Character.isDigit(board[r-1][c-1].charAt(0))){
-                    if(!numContainsExactStars(r-1,c-1,Integer.parseInt(board[r-1][c-1]))){
-                        return false;
-                    }
-                }
-                if(!isPossible(r,c,Integer.parseInt(board[r][c]),numOfStars,true)){
-                    return false;
-                }
-                else if(numContainsExactStars(r,c,Integer.parseInt(board[r][c]))){
-                    System.out.println("num, contains exact stars at"+ r+ " "+c);
-                    HashMap<Integer,Point> h =placeCharOnFutureSpots(r,c,".","?");
+            //if this is not possible, we can leave now. Will also check adjacent numbers in 3x3 if any
+            if (!isPossible(r, c, Integer.parseInt(board[r][c]), numOfStars, true)) {
+                return false;
+            } else if (numContainsExactStars(r, c, Integer.parseInt(board[r][c]))) {
+                //at this case we know the number is possible, so we can check for exact stars or if it is already solved
+                HashMap<Integer, Point> h = placeCharOnFutureSpots(r, c, ".", "?");//only need to put on future cases because go runs row by row
 
-                   boolean hold = procede(r,c,numOfStars);
-                    if(hold){
-                        return true;
-                    }
-                    replaceFromHashMap(h,".");
-                    return false;
-                }
-                if(starsMustGoHere(r,c,Integer.parseInt(board[r][c]))){
-                    System.out.println("STARS MUST GO HERE AT "+r+" "+c);
-                    HashMap<Integer, Point > hashMap = placeCharOnFutureSpots(r,c,".","%");
-                    if(numOfStars-hashMap.size() < 0){
-                        replaceFromHashMap(hashMap,".");
-                        return false;
-                    }
-                    else{
-                       boolean hold = procede(r,c,numOfStars- hashMap.size());
-                       if(hold){
-                           return true;
-                       }
-                        replaceFromHashMap(hashMap,".");
-                        return false;
-                    }
-
-                }
-                else{
-                    boolean hold = procede(r,c,numOfStars);
-                    if(hold){
-                        return true;
-                    }
-                    return false;
-
-                }
-
-            }
-            else if(board[r][c].equals("%")){
-                System.out.println("at percent @ "+r+ " "+c );
-
-                    System.out.println("percent ran");
-                    board[r][c] = "*";
-                    boolean hold =procede(r, c, numOfStars);
-                    if(hold){
-                        return true;
-                    }
-                    board[r][c] = "%";
-                    return false;
-
-            }
-            //if the board is a "-" or "?", we know in this run that those places are reserved already
-            else if (board[r][c].equals("-")||board[r][c].equals("?")) {
-                System.out.println("at ? @ "+r+ " "+c );
-                boolean hold = procede(r, c, numOfStars);
-                if(hold){
+                boolean hold = proceed(r, c, numOfStars);
+                if (hold) {
                     return true;
                 }
+                //if it doesnt work, we need to undo what we did and go back
+                replaceFromHashMap(h, ".");
                 return false;
             }
-            else{
-                if(numOfStars>=1) {
-                    board[r][c] = "*";
-                    System.out.println("Star placed at " + r + " " + c);
-
-                    boolean hold = procede(r, c, numOfStars-1);
-                    if(hold){
+            if (starsMustGoHere(r, c, Integer.parseInt(board[r][c]))) {
+                //if inside, the star has spots where it needs to go
+                HashMap<Integer, Point> hashMap = placeCharOnFutureSpots(r, c, ".", "%");
+                if (numOfStars - hashMap.size() < 0) { //not enough stars currently for this to work
+                    replaceFromHashMap(hashMap, ".");
+                    return false;
+                } else {
+                    boolean hold = proceed(r, c, numOfStars - hashMap.size());
+                    if (hold) {
                         return true;
                     }
+                    //if it doesnt work, we need to undo what we did and go back
+                    replaceFromHashMap(hashMap, ".");
+                    return false;
                 }
-                board[r][c]=".";
-                 System.out.println("Dot placed at "+r+" "+c);
-                boolean hold = procede(r, c, numOfStars);
-                if(hold){
-                    return true;
-                }
-                return false;
+
+            } else {
+                return proceed(r, c, numOfStars);
             }
+
+        } else if (board[r][c].equals("%")) { //if the board equals a "%", we just need to place a star and keep going
+            board[r][c] = "*";
+            boolean hold = proceed(r, c, numOfStars);
+            if (hold) {
+                return true;
+            }
+            //if it doesnt work in the future, we need to make sure we place a % sign instead because it is possible
+            // that it fits there, just we need to place a dot or something in another spot behind it
+            board[r][c] = "%";
+            return false;
+
         }
+        //if the board is a "-" or "?", we know in this run that those places are reserved already
+        else if (board[r][c].equals("-") || board[r][c].equals("?")) {
+            return proceed(r, c, numOfStars);
+        } else {
+            if (numOfStars >= 1) { //checks if we are able to place a star here. If so, we place and continue on.
+                board[r][c] = "*";
 
-    public static boolean starsMustGoHere(int r, int c, int maxStars){
+                boolean hold = proceed(r, c, numOfStars - 1);//keeps recursing. If it returns true, code works
+                if (hold) {
+                    return true;
+                }
+            }
+            //if not, we need to change the star to a dot and keep going
+            board[r][c] = ".";
+            return proceed(r, c, numOfStars);
+        }
+    }
+
+    /*
+    starsMustGoHere checks to see if the stars in the future are going to need to be there.
+    this occurs when all future spots (enything with just a .) equals the amount of stars needed to fill a square.
+    if this does occur, we can fill those spots with a % sign to denote in the future that the stars are forced to be here
+     */
+    public static boolean starsMustGoHere(int r, int c, int maxStars) {
         int starsLeft = maxStars;
-        int openSpotsForFuture=0;
-        for(int x=r-1;x<=r+1;x++){
-            if(x>6 || x<0){
+        int openSpotsForFuture = 0;
+        for (int x = r - 1; x <= r + 1; x++) {
+            if (!inBounds(x)) {
                 continue;
             }
-            for(int y=c-1;y<=c+1;y++) {
-                if(y>6 || y<0){
+            for (int y = c - 1; y <= c + 1; y++) {
+                if (!inBounds(y)) {
                     continue;
                 }
-                if((r+1==x )|| (r==x && c+1==y)){
-                    if(board[x][y].equals(".")){
+                //the if statement below checks just for all future spots in the code. If its not in the future cases,
+                // we check around it still to see if there are open star spots around it
+                if ((r + 1 == x) || (r == x && c + 1 == y)) {
+                    if (board[x][y].equals(".")) {
                         openSpotsForFuture++;
-                    }
-                    else if(board[x][y].equals("*")||board[x][y].equals("%")){
+                    } else if (board[x][y].equals("*") || board[x][y].equals("%")) {
                         starsLeft--;
                     }
-                }
-                else if(board[x][y].equals("*")||board[x][y].equals("%")){
+                } else if (board[x][y].equals("*") || board[x][y].equals("%")) {
                     starsLeft--;
                 }
             }
         }
-        if(starsLeft==openSpotsForFuture){
-            return true;
-        }
-        else return false;
+        //will return true if the stars left are exactly equal to the open spots for the future
+        return starsLeft == openSpotsForFuture;
 
     }
-    //RETURNS TRUE IF THE NUMBER ALREADY CONTAINS ALL OF THE STARS IT NEEDS, ALLOWING "?" TO BE IN ALL ADJACENT SPOTS
-    public static boolean numContainsExactStars(int r, int c, int maxStars){
-        int starsLeft = maxStars;
-        for(int x=r-1;x<=r+1;x++){
-            if(!inBounds(x)){
-                continue;
-            }
-            for(int y=c-1;y<=c+1;y++) {
-                if(!inBounds(y)){
-                    continue;
-                }
-                else if(board[x][y].equals("*")||board[x][y].equals("%")){
-                    starsLeft--;
-                }
-            }
-        }
-        if(starsLeft==0){
-            return true;
-        }
-        else return false;
-    }
-    //ISPOSSIBLE IS GOING TO LET ME KNOW IF IT IS POSSIBLE FOR A NUMBER (OR ANY ADJACENT NUMBER) ARE POSSIBLE AT WORKING.
-    public static boolean isPossible(int r, int c, int maxStars, int usableStars,boolean checkAdjacent){
-        int starsLeft = maxStars;
-        int openSpotsForFuture=0;
-        for(int x=r-1;x<=r+1;x++){
-            if(x>6 || x<0){
-                continue;
-            }
-            for(int y=c-1;y<=c+1;y++) {
-                if(y>6 || y<0){
-                    continue;
-                }
-                if(checkAdjacent && (r+1==x )|| (r==x && c+1==y)){
-                    if(board[x][y].equals(".")){
-                        openSpotsForFuture++;
-                    }
-                }
-                if(checkAdjacent && Character.isDigit(board[x][y].charAt(0)) && x!=r && y!=c){
-                    if(!isPossible(x,y,Integer.parseInt(board[x][y]),usableStars,false)){
-                        return false;
-                    }
-                }
-                else if(board[x][y].equals("*")||board[x][y].equals("%")){
-                    starsLeft--;
-                }
-            }
-        }
-        if(starsLeft>usableStars || starsLeft<0){ //too many case
-            return false;
-        }
-        else if(checkAdjacent && starsLeft>openSpotsForFuture){ //not enough space for future case. Only works on first num checked
-            return false;
-        }
-        else if(usableStars==0 && starsLeft!=0){ //too little case
-            return false;
-        }
-        else return true;
 
-    }
-    public static void zeroClear(){
-        for(int r=0;r<7;r++){
-            for(int c=0;c<7;c++) {
-                if(board[r][c].equals("0")){
-                    placeTickOnBoard(r,c);//indicates NOTHING can go in these spots
-                }
-            }
-        }
-    }
-    //places a character around the row and column given
-    public static void placeTickOnBoard(int r, int c){
-        for(int x=r-1;x<=r+1;x++){
-            if(x>6 || x<0){
+    //Will return true if the number at this point contains all the exact stars it needs. If true, we are able to
+    // place a "?" around it, denoting we can skip over this spot
+    public static boolean numContainsExactStars(int r, int c, int maxStars) {
+        int starsLeft = maxStars;
+        for (int x = r - 1; x <= r + 1; x++) {
+            if (!inBounds(x)) {
                 continue;
             }
-            for(int y=c-1;y<=c+1;y++) {
-                if(y>6 || y<0){
+            for (int y = c - 1; y <= c + 1; y++) {
+                if (!inBounds(y)) {
                     continue;
-                }
-                if(board[x][y].equals(".")){
-                    board[x][y]="-";
+                } else if (board[x][y].equals("*") || board[x][y].equals("%")) {
+                    starsLeft--;
                 }
             }
         }
+        return starsLeft == 0;
     }
-    //places chars on the board, and if found out later that it does not work will revert itself
-    public static HashMap<Integer,Point> placeCharOnBoard(int r, int c, String lookFor, String replace){
-        HashMap<Integer,Point> replacedCoords = new HashMap<>();
-        int count =0;
-        for(int x=r-1;x<=r+1;x++){
-            if(x>6 || x<0){
+
+    //IsPossible checks to see if the number at the row and column is able to actually work in the future. This method gives the star the
+    // benefit of doubt that it will work in the future. but is also able to check adjacent stars to make sure they could work too.
+    public static boolean isPossible(int r, int c, int maxStars, int usableStars, boolean checkAdjacent) {
+        int starsLeft = maxStars;
+        int openSpotsForFuture = 0;
+        for (int x = r - 1; x <= r + 1; x++) {
+            if (x > 6 || x < 0) {
                 continue;
             }
-            for(int y=c-1;y<=c+1;y++) {
-                if(y>6 || y<0){
-                    continue;
-                }
-                if(board[x][y].equals(lookFor)){
-                    replacedCoords.put(count, new Point(x,y));
-                    board[x][y]=replace;
-                    count++;
-                }
-            }
-        }
-        return replacedCoords;
-    }
-    public static void replaceFromHashMap(HashMap<Integer,Point> hashMap,String replace){
-        for(int i=0;i<hashMap.size();i++){
-            Point p = hashMap.get(i);
-            board[p.x][p.y]=replace;
-        }
-    }
-    public static HashMap<Integer,Point> placeCharOnFutureSpots(int r,int c, String lookFor, String replace){
-        HashMap<Integer,Point> replacedCoords = new HashMap<>();
-        int count =0;
-        for(int x=r-1;x<=r+1;x++){
-            if(x>6 || x<0){
-                continue;
-            }
-            for(int y=c-1;y<=c+1;y++) {
+            for (int y = c - 1; y <= c + 1; y++) {
                 if (y > 6 || y < 0) {
                     continue;
                 }
-                else if ((r + 1 == x) || (r == x && c + 1 == y)) {
+                if (checkAdjacent && (r + 1 == x) || (r == x && c + 1 == y)) {
+                    if (board[x][y].equals(".")) {
+                        openSpotsForFuture++;
+                    }
+                }
+                if (checkAdjacent && Character.isDigit(board[x][y].charAt(0)) && x != r && y != c) {
+                    if (!isPossible(x, y, Integer.parseInt(board[x][y]), usableStars, false)) {
+                        return false;
+                    }
+                } else if (board[x][y].equals("*") || board[x][y].equals("%")) {
+                    starsLeft--;
+                }
+            }
+        }
+        //too many stars case
+        if (starsLeft > usableStars || starsLeft < 0) {
+            return false;
+        }
+        //not enough space for future case. Only works on first num checked due to checkAdjacent being false to prevent infinite calls between two numbers
+        else if (checkAdjacent && starsLeft > openSpotsForFuture) {
+            return false;
+        } else return true;
+
+    }
+
+    //Because we know early on zero cannot have any numbers associated with it, we can simply say that no stars can go in its vicinity early on
+    public static void zeroClear() {
+        for (int r = 0; r < 7; r++) {
+            for (int c = 0; c < 7; c++) {
+                if (board[r][c].equals("0")) {
+                    placeTickOnBoard(r, c);//indicates NOTHING can go in these spots
+                }
+            }
+        }
+    }
+
+    //places a "-" around the row and column given, only used for zero
+    public static void placeTickOnBoard(int r, int c) {
+        for (int x = r - 1; x <= r + 1; x++) {
+            if (x > 6 || x < 0) {
+                continue;
+            }
+            for (int y = c - 1; y <= c + 1; y++) {
+                if (y > 6 || y < 0) {
+                    continue;
+                }
+                if (board[x][y].equals(".")) {
+                    board[x][y] = "-";
+                }
+            }
+        }
+    }
+
+    /* takes an r and c value and checks all future spots for a value where it might be able to go. If we find a value
+     which contains the lookFor value, we replace it and send the coordinates changed to a hashMap for later if we realize
+     this case cannot work */
+    public static HashMap<Integer, Point> placeCharOnFutureSpots(int r, int c, String lookFor, String replace) {
+        HashMap<Integer, Point> replacedCoords = new HashMap<>();
+        int count = 0;
+        for (int x = r - 1; x <= r + 1; x++) {
+            if (!inBounds(x)) {
+                continue;
+            }
+            for (int y = c - 1; y <= c + 1; y++) {
+                if (inBounds(y) && ((r + 1 == x) || (r == x && c + 1 == y))) {
                     if (board[x][y].equals(lookFor)) {
-                        replacedCoords.put(count, new Point(x,y));
-                        board[x][y]=replace;
+                        replacedCoords.put(count, new Point(x, y));
+                        board[x][y] = replace;
                         count++;
                     }
                 }
@@ -306,59 +268,69 @@ public class tentaizu2 {
         return replacedCoords;
     }
 
-    public static void readInput(Scanner sc){
+    //helper method for the case where we need to replace points from placeCharOnFutureSpots.
+    public static void replaceFromHashMap(HashMap<Integer, Point> hashMap, String replace) {
+        for (int i = 0; i < hashMap.size(); i++) {
+            Point p = hashMap.get(i);
+            board[p.x][p.y] = replace;
+        }
+    }
 
-        for(int r=0;r<7;r++){
+    //reads in the input for tentaizu board
+    public static void readInput(Scanner sc) {
+
+        for (int r = 0; r < 7; r++) {
             String rowOfInput = sc.next();
             //initializes each row for the board
-            for(int c=0;c<7;c++) {
-                board[r][c] = rowOfInput.substring(c,c+1);
+            for (int c = 0; c < 7; c++) {
+                board[r][c] = rowOfInput.substring(c, c + 1);
             }
         }
     }
 
-    public static boolean isBoardComplete(int usableStars){
-        if(usableStars !=0){
+    //checks to see if exactly everything in the last corner is valid before calling board complete
+    public static boolean isBoardComplete(int usableStars) {
+        if (usableStars != 0) {
             return false;//need to use all of the stars
         }
         //there are three unchecked squares after 6 6 is reached, and they are at 6 5 , 5 6, and 5 5.
         // we need to check if there are numbers which depend on 6 6 being a star or not
-        if(Character.isDigit(board[6][5].charAt(0)) && !numContainsExactStars(6,5,Integer.parseInt(board[6][5]))){
+        if (Character.isDigit(board[6][5].charAt(0)) && !numContainsExactStars(6, 5, Integer.parseInt(board[6][5]))) {
             return false;
         }
-        if(Character.isDigit(board[5][6].charAt(0)) && !numContainsExactStars(5,6,Integer.parseInt(board[5][6]))){
+        if (Character.isDigit(board[5][6].charAt(0)) && !numContainsExactStars(5, 6, Integer.parseInt(board[5][6]))) {
             return false;
         }
-        if(Character.isDigit(board[5][5].charAt(0)) && !numContainsExactStars(5,5,Integer.parseInt(board[5][5]))){
+        if (Character.isDigit(board[5][5].charAt(0)) && !numContainsExactStars(5, 5, Integer.parseInt(board[5][5]))) {
             return false;
         }
-        //THIS IS FOR A SINGLE CASE WHERE THE LAST PART OF THE BOARD DOES NOT GET CHECKED
-        if(board[6][6]=="%"){
-            board[6][6]="*";
+        //This is for a single case where the one at 6,6 is not able to become a star, and needs to be
+        if (Objects.equals(board[6][6], "%")) {
+            board[6][6] = "*";
         }
         return true;
     }
-    public static boolean procede(int r,int c, int usableStars){
-        if(c>=6 && r>=6){
-            if(isBoardComplete(usableStars)){
-                return true;
-            }
-            else return false;
-        }
-        else if(c>=6){
-            return go(r+1,0,usableStars);
-        }
-        else{
-            return go(r,c+1,usableStars);
+
+    //helper method for the go function. Checks to see if everything seen is valid
+    public static boolean proceed(int r, int c, int usableStars) {
+        if (c >= 6 && r >= 6) {
+            return isBoardComplete(usableStars);
+        } else if (c >= 6) {
+            return go(r + 1, 0, usableStars);
+        } else {
+            return go(r, c + 1, usableStars);
         }
     }
-    public static void printBoard(int numberBoard){
-        System.out.println("Tentaizu Board #"+numberBoard+":");
-        for(int r=0;r<7;r++){
-            for(int c=0;c<7;c++) {
-                if(board[r][c].equals("?")||board[r][c].equals("-")){
-                    board[r][c]=".";
+
+    //prints out the board, and takes in the number board for formatting purposes
+    public static void printBoard(int numberBoard) {
+        System.out.println("Tentaizu Board #" + numberBoard + ":");
+        for (int r = 0; r < 7; r++) {
+            for (int c = 0; c < 7; c++) {
+                if (board[r][c].equals("?") || board[r][c].equals("-")) {
+                    board[r][c] = ".";
                 }
+
                 System.out.print(board[r][c]);
             }
             System.out.println();
@@ -367,12 +339,14 @@ public class tentaizu2 {
     }
 
 }
-class Point{
+
+//point class to make HashMap input much cleaner
+class Point {
     int x;
     int y;
-    public Point(int x, int y){
-        this.x=x;
-        this.y=y;
+
+    public Point(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 }
-
